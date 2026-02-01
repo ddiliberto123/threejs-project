@@ -14,7 +14,12 @@ function Hexagon({
   showCoin?: boolean;
 }) {
   const hexRef = useRef<THREE.Mesh>(null!);
-  const coinNumber = useRef(Math.floor(Math.random() * 12) + 1);
+  const coinNumber = useRef(Math.floor(Math.random() * 11) + 2); // 2-12 instead of 1-12
+  
+  // Calculate dot count using formula 6 - |7 - n| and determine color
+  const dotCount = 6 - Math.abs(7 - coinNumber.current);
+  const isRed = dotCount === 5;
+  const textColor = isRed ? "#FF0000" : "#000000";
 
   // Create outer hexagon shape (border)
   const createHexShape = (radius: number) => {
@@ -58,7 +63,7 @@ function Hexagon({
           <extrudeGeometry
             args={[outerHexShape, { depth: 0.1, bevelEnabled: false }]}
           />
-          <meshPhongMaterial color={0x654321} /> {/* Darker brown for border */}
+          <meshPhongMaterial color={0x654321} transparent opacity={1} /> {/* Darker brown for border */}
         </mesh>
 
         {/* Optional coin with text and cylinder row (child of main hexagon) */}
@@ -70,7 +75,7 @@ function Hexagon({
               rotation={[THREE.MathUtils.degToRad(90), 0, 0]}
             >
               <cylinderGeometry args={[0.5, 0.5, coinHeight, 32]} />
-              <meshPhongMaterial color={0xf5f5dc} />
+              <meshPhongMaterial color={0xf5f5dc} transparent opacity={1} />
 
               {/* 3D Text on coin */}
               <group
@@ -88,35 +93,33 @@ function Hexagon({
                     bevelThickness={0.01}
                   >
                     {coinNumber.current}
-                    <meshStandardMaterial color="#8B4513" />
+                    <meshStandardMaterial color={textColor} />
                   </Text3D>
                 </Center>
+                {/* Probability markers (row of cylinders) below coin */}
+                {Array.from({ length: dotCount }, (_, index) => {
+                  const spacing = 0.12;
+                  const startOffset = -(dotCount - 1) * spacing / 2;
+                  
+                  return (
+                    <mesh
+                      key={index}
+                      position={[
+                        startOffset + index * spacing,
+                        -.25,
+                        0,
+                      ]}
+                      rotation={[THREE.MathUtils.degToRad(90), 0, 0]}
+                    >
+                      <cylinderGeometry args={[0.05, 0.05, 0.05, 16]} />
+                      <meshPhongMaterial color={textColor} />
+                    </mesh>
+                  );
+                })}
               </group>
             </mesh>
 
-            {/* Probability markers (row of cylinders) below coin */}
-            {Array.from(
-              { length: Math.floor(Math.random() * 4) + 2 },
-              (_, index) => {
-                const totalMarkers = Math.floor(Math.random() * 4) + 2; // 2-5 markers
-                const spacing = 0.4;
-                const startOffset = (-(totalMarkers - 1) * spacing) / 2;
-                return (
-                  <mesh
-                    key={index}
-                    position={[
-                      startOffset + index * spacing,
-                      0,
-                      tileHeight - 0.4,
-                    ]}
-                    rotation={[THREE.MathUtils.degToRad(90), 0, 0]}
-                  >
-                    <cylinderGeometry args={[0.15, 0.15, 0.1, 16]} />
-                    <meshPhongMaterial color="#8B4513" />
-                  </mesh>
-                );
-              },
-            )}
+            
           </group>
         )}
       </mesh>
